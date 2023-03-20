@@ -46,9 +46,7 @@ exports.createUser = async (req, res) => {
 //LOGIN ADMIN
 exports.login = async (req, res) => {
   try {
-    console.log(req.body.phone)
     const findUser = await UserModel.findOne({ phone: req.body.phone });
-    console.log(findUser)
     if (!req.body.phone || !req.body.password) {
       return res
         .status(200)
