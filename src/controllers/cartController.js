@@ -158,7 +158,7 @@ exports.confirmBook = async (req, res) => {
                             }
                         }
                     }
-                    const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.userExists.id },
+                    const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.body.userBorrowInfo },
                         { $set: checkCart },
                         { new: true })
                     res.status(200).json({ success: true, data: orderBook, msg: "Xác nhận hủy phiên mượn thành công!" })
@@ -238,7 +238,7 @@ exports.borrowBook = async (req, res) => {
                             }
                         }
                     }
-                    const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.userExists.id },
+                    const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.body.userBorrowInfo },
                         { $set: checkCart },
                         { new: true })
                     res.status(200).json({ success: true, data: orderBook, msg: "Xác nhận mượn sách thành công!" })
@@ -290,9 +290,9 @@ exports.returnBook = async (req, res) => {
                         }
                     }
                 }
-                const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.userExists.id },
+                const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.body.userBorrowInfo },
                     { $set: checkCart },
-                    { new: true })
+                    { new: true })              
                 res.status(200).json({ success: true, data: orderBook, msg: "Xác nhận trả sách sách thành công!" })
                 // }
             }
@@ -347,7 +347,7 @@ exports.cancelBook = async (req, res) => {
                             }
                         }
                     }
-                    const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.userExists.id },
+                    const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.body.userBorrowInfo },
                         { $set: checkCart },
                         { new: true })
                     res.status(200).json({ success: true, data: orderBook, msg: "Xác nhận hủy phiên mượn thành công!" })
