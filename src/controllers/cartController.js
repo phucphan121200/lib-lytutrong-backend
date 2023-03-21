@@ -183,7 +183,7 @@ exports.confirmBook = async (req, res) => {
                             }
                         }
                     }
-                    const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.userExists.id },
+                    const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.body.userBorrowInfo },
                         { $set: checkCart },
                         { new: true })
                     res.status(200).json({ success: true, data: orderBook, msg: "Xác nhận mượn sách thành công!" })
