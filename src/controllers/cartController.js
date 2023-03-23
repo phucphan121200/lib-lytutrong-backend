@@ -254,7 +254,6 @@ exports.borrowBook = async (req, res) => {
 
 //RETURN BOOK
 exports.returnBook = async (req, res) => {
-
     const checkCart = await CartModel.findOne({ "userBorrowInfo": req.body.userBorrowInfo });
     try {
         for (let i = 0; i < req.body.cartItems.length; i++) {
@@ -276,12 +275,15 @@ exports.returnBook = async (req, res) => {
                         if (checkCart.cartItems[y].amount < req.body.cartItems[i].amount) {
                             res.status(200).json({ success: false, data: [], msg: "Không thể duyệt quá số lượng cho phép!" })
                         } else if (checkCart.cartItems[y].amount > req.body.cartItems[i].amount){
-                            const amountBook = checkCart.cartItems[y].amount - req.body.cartItems[i].amount
+                            checkBookStock.stock+=parseInt(req.body.cartItems[i].amount,10)
+                            checkBookStock.authStock+=parseInt(req.body.cartItems[i].amount,10)
                             await BookModel.findOneAndUpdate({ "_id": checkCart.cartItems[y].bookId },
                             {
-                                $set: { authStock: checkBookStock.authStock + req.body.cartItems[i].amount },
-                                stock: checkBookStock.stock + req.body.cartItems[i].amount
+                                $set: { authStock: checkBookStock.authStock ,
+                                stock: checkBookStock.stock
+                                }
                             })
+                            const amountBook = checkCart.cartItems[y].amount - req.body.cartItems[i].amount
                             checkCart.cartItems.push({
                                 bookId: checkCart.cartItems[y].bookId,
                                     amount: amountBook,
@@ -304,8 +306,9 @@ exports.returnBook = async (req, res) => {
                             checkCart.cartItems[y].timeReturn = new Date()
                             await BookModel.findOneAndUpdate({ "_id": checkCart.cartItems[y].bookId },
                                 {
-                                    $set: { authStock: checkBookStock.authStock + req.body.cartItems[i].amount },
+                                    $set: { authStock: checkBookStock.authStock + req.body.cartItems[i].amount,
                                     stock: checkBookStock.stock + req.body.cartItems[i].amount
+                                    }
                                 })
                             checkCart.cartItems[y].amount = req.body.cartItems[i].amount
                         }
