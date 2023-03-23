@@ -277,6 +277,11 @@ exports.returnBook = async (req, res) => {
                             res.status(200).json({ success: false, data: [], msg: "Không thể duyệt quá số lượng cho phép!" })
                         } else if (checkCart.cartItems[y].amount > req.body.cartItems[i].amount){
                             const amountBook = checkCart.cartItems[y].amount - req.body.cartItems[i].amount
+                            await BookModel.findOneAndUpdate({ "_id": checkCart.cartItems[y].bookId },
+                            {
+                                $set: { authStock: checkBookStock.authStock + req.body.cartItems[i].amount },
+                                stock: checkBookStock.stock + req.body.cartItems[i].amount
+                            })
                             checkCart.cartItems.push({
                                 bookId: checkCart.cartItems[y].bookId,
                                     amount: amountBook,
@@ -292,11 +297,6 @@ exports.returnBook = async (req, res) => {
                             checkCart.cartItems[y].isReturned = true;
                             checkCart.cartItems[y].teacherReturn = req.userExists.id
                             checkCart.cartItems[y].timeReturn = new Date()
-                            await BookModel.findOneAndUpdate({ "_id": checkCart.cartItems[y].bookId },
-                                {
-                                    $set: { authStock: checkBookStock.authStock + req.body.cartItems[i].amount },
-                                    stock: checkBookStock.stock + req.body.cartItems[i].amount
-                                })
                             checkCart.cartItems[y].amount = req.body.cartItems[i].amount
                         } else {
                             checkCart.cartItems[y].isReturned = true;
