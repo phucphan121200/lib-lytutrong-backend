@@ -6,9 +6,13 @@ const BookSchema = mongoose.Schema(
             type: String,
             require: true
         },
+        bookId: {
+            type: String,
+            unique: true,
+            default: "1"
+        },
         issuingcompany: {
             type: String,
-            require: true
         },
         booklet: {
             type: String,
@@ -25,17 +29,7 @@ const BookSchema = mongoose.Schema(
             require: true
         },
         translator: {
-            type: String,
-            require: true
-        },
-        numberofpages: {
-            type: Number,
-            require: true,
-            default: true,
-        },
-        publishingcompany: {
-            type: String,
-            require: true,
+            type: String
         },
         categoryItems: [{
             categoryId: {
@@ -57,6 +51,11 @@ const BookSchema = mongoose.Schema(
             type: Number,
             require: true,
             default: 0
+        },
+        liquid: {
+            type: Number,
+            require: true,
+            default: 0,
         },
         isDeleted: {
             type: Boolean,

@@ -11,6 +11,11 @@ const UserSchema = mongoose.Schema(
             require: true,
             default: "1"
         },
+        userId: {
+            type: String,
+            unique: true,
+            default: "1"
+        },
         image: {
             type: String,
             default: "https://cdn-icons-png.flaticon.com/512/219/219969.png"

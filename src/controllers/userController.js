@@ -1,14 +1,103 @@
 const { UserModel } = require("../models/UserModel")
 const CryptoJS = require("crypto-js");
 const jwt = require("jsonwebtoken");
+const XLSX = require('xlsx')
+const { Workbook } = require('exceljs')
+const fs = require('fs');
+
+
+//ADD FILE USER
+exports.addFileUser = async (req, res) => {
+  try {
+    const password = process.env.NEWPASSWORD
+    const count = await UserModel.count()
+    const workbook = XLSX.readFile(req.file.path);
+    const sheet_namelist = workbook.SheetNames;
+    let x = 0;
+    const userData = []
+    sheet_namelist.forEach(element => {
+      const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_namelist[x]]);
+      for (let i = 0; i < xlData.length; i++) {
+        userData.push({
+          name: xlData[i].HovaTen,
+          phone: xlData[i].SDT,
+          password: CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(password), process.env.SECRET_KEY).toString(),
+          userId: "USER-" + (count + i)
+        })
+      }
+      UserModel.insertMany(userData)
+      x++;
+    });
+
+    fs.unlink(req.file.path, (err) => {
+      if (err) {
+        res.status(200).json({ success: false, data: [], msg: "Lỗi hệ thống" })
+      }
+      else {
+      }
+    })
+    res.status(200).json({ success: true, msg: "Thêm người dùng thành công" })
+  } catch (error) {
+    res.status(200).json({ success: false, data: [], msg: "Lỗi hệ thống" })
+  }
+}
+
+//EXPORT FILE
+exports.exportFileUser = async (req, res) => {
+  try {
+    const wb = new Workbook();
+    const ws = wb.addWorksheet("Người dùng")
+
+    ws.columns = [
+      { header: "STT", key: "stt" },
+      { header: "ID", key: "userId" },
+      { header: "Họ và Tên", key: "name" },
+      { header: "SDT", key: "phone" },
+    ]
+
+    const data = await UserModel.find({ isDeleted: false })
+
+    const add = []
+    for (let i = 0; i < data.length; i++) {
+      add.push({
+        stt: i + 1,
+        userId: data[i].userId,
+        name: data[i].name,
+        phone: data[i].phone
+      })
+    }
+
+    add.forEach((user) => {
+      ws.addRow(user)
+    })
+
+
+    ws.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true }
+    })
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheatml.sheet"
+    );
+    res.setHeader("Content-Disposition", `attachment; filename=users-${Date()}.xlsx`);
+
+    return wb.xlsx.write(res).then(() => {
+      res.status(200);
+    })
+  } catch (error) {
+    res.status(200).json({ success: false, data: [], msg: "Lỗi hệ thống" })
+  }
+}
 
 //ADD USER
 exports.createUser = async (req, res) => {
   const password = process.env.NEWPASSWORD
+  const count = await UserModel.count()
   const newUser = {
     name: req.body.name,
     phone: req.body.phone,
     image: req.body.image,
+    userId: "USER-" + count,
     password: CryptoJS.AES.encrypt(
       CryptoJS.enc.Utf8.parse(password), process.env.SECRET_KEY
     ).toString(),

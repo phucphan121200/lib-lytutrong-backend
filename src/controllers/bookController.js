@@ -1,30 +1,142 @@
 const { BookModel } = require("../models/BookModel")
+const { CategoryModel } = require("../models/CategoryModel")
+const XLSX = require('xlsx')
+const {Workbook} = require('exceljs')
+const fs = require('fs');
+
+//ADD FILE BOOK
+exports.addFileBook = async (req, res) => {
+  try {
+    const count = await BookModel.count()
+    const workbook = XLSX.readFile(req.file.path);
+    const sheet_namelist = workbook.SheetNames;
+    let x = 0;
+    const bookData = []
+    sheet_namelist.forEach(async element => {
+      const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_namelist[x]]);
+      for (let i = 0; i < xlData.length; i++) {
+        const cate = await CategoryModel.findOne({name: xlData[i].Theloai})
+        bookData.push({
+          name: xlData[i].Tensach,
+          issuingcompany: xlData[i].Nhaxuatban,
+          publicationdate: xlData[i].Namxuatban,
+          stock: xlData[i].Soluong,
+          authStock: xlData[i].Soluong,
+          liquid: 0,
+          image: xlData[i].Hinhanh,
+          translator: xlData[i].Tacgia,
+          price: xlData[i].Dongia,
+          categoryItems: [{categoryId: cate._id}],
+          bookId: "BOOK-" + (count + i)
+        })
+      }
+      BookModel.insertMany(bookData)
+      x++;
+    });
+
+    fs.unlink(req.file.path, (err) => {
+      if (err) {
+        res.status(200).json({ success: false, data: [], msg: "Lỗi hệ thống" })
+      }
+      else {
+      }
+    })
+    res.status(200).json({ success: true, msg: "Thêm người dùng thành công" })
+  } catch (error) {
+    res.status(200).json({ success: false, data: [], msg: "Lỗi hệ thống" })
+  }
+}
+
+//EXPORT FILE
+exports.exportFileBook = async (req, res) => {
+  try {
+    const wb = new Workbook();
+    const ws = wb.addWorksheet("Đầu sách")
+
+    ws.columns = [
+      { header: "STT", key: "stt" },
+      { header: "ID", key: "bookId" },
+      { header: "Tên sách", key: "name" },
+      { header: "Tác giả", key: "translator" },
+      { header: "Nhà xuất bản", key: "issuingcompany" },
+      { header: "Năm xuất bản", key: "publicationdate" },
+      { header: "Thể loại", key: "categoryItems" },
+      { header: "Số lượng khả dụng", key: "authStock" },
+      { header: "Số lượng thực tế", key: "stock" },
+      { header: "Số lượng thanh lý", key: "liquid" }
+    ]
+
+    const data = await BookModel.find({ isDeleted: false }).populate([
+      {
+        path: "categoryItems",
+        populate: {
+          path: "categoryId",
+          select: "name",
+        }
+      }
+    ])
+    
+    const add = []
+    for(let i =0; i<data.length;i++){
+      add.push({
+        stt: i+1,
+        bookId: data[i].bookId,
+        name: data[i].name,
+        translator: data[i].translator,
+        issuingcompany: data[i].issuingcompany,
+        publicationdate: data[i].publicationdate,
+        categoryItems: data[i].categoryItems[0].categoryId.name,
+        authStock: data[i].authStock,
+        stock: data[i].stock,
+        liquid: data[i].liquid
+      })
+    }
+
+    add.forEach((book) => {
+      ws.addRow(book)
+    })
+
+
+    ws.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true }
+    })
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheatml.sheet"
+    );
+    res.setHeader("Content-Disposition", `attachment; filename=book-${Date()}.xlsx`);
+
+    return wb.xlsx.write(res).then(() => {
+      res.status(200);
+    })
+  } catch (error) {
+    res.status(200).json({ success: false, data: [], msg: "Lỗi hệ thống" })
+  }
+}
 
 //ADD BOOK
 exports.createBook = async (req, res) => {
+  const count = await BookModel.count()
   const newBook = {
     name: req.body.name,
+    bookId: "BOOK-" + (count),
     issuingcompany: req.body.issuingcompany,
     publicationdate: req.body.publicationdate,
-    numberofpages: req.body.numberofpages,
-    publishingcompany: req.body.publishingcompany,
-    grade: req.body.grade,
     stock: req.body.stock,
     authStock: req.body.stock,
+    liquid: 0,
     image: req.body.image,
     categoryItems: req.body.categoryItems,
-    booklet: req.body.booklet,
     translator: req.body.translator,
     price: req.body.price
-
   };
+  
   try {
     if (req.userExists.isAdmin) {
+      console.log(newBook.name)
       if (!newBook.name
         || !newBook.issuingcompany
         || !newBook.publicationdate
-        || !newBook.numberofpages
-        || !newBook.publishingcompany
         || !newBook.stock
         || !newBook.categoryItems
         || !newBook.price
@@ -54,8 +166,6 @@ exports.updateBook = async (req, res) => {
       if (!req.body.name
         || !req.body.issuingcompany
         || !req.body.publicationdate
-        || !req.body.numberofpages
-        || !req.body.publishingcompany
         || !req.body.stock
         || !req.body.categoryItems) {
         return res
@@ -85,7 +195,7 @@ exports.inboundBook = async (req, res) => {
         return res
           .status(200)
           .json({ success: false, data: [], msg: "Vui lòng thêm số lượng cần nhập" });
-      } {
+      } else {
         const findBook = await BookModel.findById(req.params.id);
         const newstock = findBook.stock + parseInt(req.body.stock);
         const newAuthStock = findBook.authStock + parseInt(req.body.stock)
@@ -102,7 +212,49 @@ exports.inboundBook = async (req, res) => {
     } else {
       return res
         .status(200)
-        .json({ success: false, msg: "Bọn không có quyền tăng tồn!" });
+        .json({ success: false, msg: "Bạn không có quyền tăng tồn!" });
+    }
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+//LIQUID BOOK
+exports.liquidBook = async (req, res) => {
+  try {
+    if (req.userExists.isAdmin) {
+      if (!req.body.stock) {
+        return res
+          .status(200)
+          .json({ success: false, data: [], msg: "Vui lòng thêm số lượng cần nhập" });
+      } else {
+        const findBook = await BookModel.findById(req.params.id);
+        if(req.body.stock > findBook.authStock){
+          return res
+          .status(200)
+          .json({ success: false, data: [], msg: "Có phiên mượn đang chứa sách đã chọn" });
+        }
+        else {
+          const newstock = findBook.stock - parseInt(req.body.stock);
+          const newAuthStock = findBook.authStock - parseInt(req.body.stock)
+          const newLiquid = findBook.liquid + parseInt(req.body.stock)
+          const updateBook = await BookModel.findByIdAndUpdate(req.params.id,
+            {
+              $set: {
+                stock: newstock,
+                authStock: newAuthStock,
+                liquid: newLiquid
+              }
+            },
+            { new: true });
+          return res.status(200).json({ success: true, data: updateBook, msg: "Thanh lý thành công! Số tồn hiện tại là: " + updateBook.stock });
+        }
+      }
+    } else {
+      return res
+        .status(200)
+        .json({ success: false, msg: "Bạn không có quyền thanh lý sách!" });
     }
 
   } catch (err) {
@@ -188,6 +340,33 @@ exports.getallBook = async (req, res) => {
   if (req.userExists.isAdmin) {
     try {
       const findBook = await BookModel.find({ isDeleted: false }).populate([
+        {
+          path: "categoryItems",
+          populate: {
+            path: "categoryId",
+            select: "name",
+          }
+        }
+      ]).sort({updatedAt: -1});
+      if (findBook == "") {
+        return res.status(200).json({ success: true, msg: "Không tìm thấy bất kì đầu sách nào!", data: [] });
+      } else {
+        return res.status(200).json({ success: true, data: findBook, msg: "Lấy dữ liệu thành công" });
+      }
+    } catch (err) {
+      return res.status(500).json({ success: true, msg: err });
+    }
+  }
+  else {
+    return res.status(200).json({ success: true, msg: "Bạn không có quyền truy cập", data: [] });
+  }
+};
+
+// GET ALL BOOK WITH AUTH STOCK !=0
+exports.getallStockBook = async (req, res) => {
+  if (req.userExists.isAdmin) {
+    try {
+      const findBook = await BookModel.find({ isDeleted: false, stock: {$gt: 0} }).populate([
         {
           path: "categoryItems",
           populate: {

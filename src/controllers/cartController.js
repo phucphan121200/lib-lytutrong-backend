@@ -1,6 +1,5 @@
 const { CartModel } = require("../models/CartModel")
 const { BookModel } = require("../models/BookModel");
-const { now } = require("mongoose");
 
 // ADD CART
 exports.createCart = async (req, res) => {
@@ -48,7 +47,6 @@ exports.createCart = async (req, res) => {
 //REMOVE FROM CART
 exports.removeCart = async (req, res) => {
     const checkCart = await CartModel.findOne({ "userBorrowInfo": req.userExists.id });
-    console.log(req.body)
     if (checkCart) {
         const isAddedBook = checkCart.cartItems.find((cart) => cart.bookId == req.body.cartItems[0].bookId
             && cart.isOrder == false
@@ -277,6 +275,29 @@ exports.returnBook = async (req, res) => {
                     ) {
                         if (checkCart.cartItems[y].amount < req.body.cartItems[i].amount) {
                             res.status(200).json({ success: false, data: [], msg: "Không thể duyệt quá số lượng cho phép!" })
+                        } else if (checkCart.cartItems[y].amount > req.body.cartItems[i].amount){
+                            const amountBook = checkCart.cartItems[y].amount - req.body.cartItems[i].amount
+                            checkCart.cartItems.push({
+                                bookId: checkCart.cartItems[y].bookId,
+                                    amount: amountBook,
+                                    isOrder: true,
+                                    isConfirm: true,
+                                    isBorrowed: true,
+                                    teacherConfirm: req.userExists.id,
+                                    teacherBorrow: req.userExists.id,
+                                    timeConfirm: new Date(),
+                                    timeBorrow: new Date(),
+                                    exp: checkCart.cartItems[y].exp
+                            })
+                            checkCart.cartItems[y].isReturned = true;
+                            checkCart.cartItems[y].teacherReturn = req.userExists.id
+                            checkCart.cartItems[y].timeReturn = new Date()
+                            await BookModel.findOneAndUpdate({ "_id": checkCart.cartItems[y].bookId },
+                                {
+                                    $set: { authStock: checkBookStock.authStock + req.body.cartItems[i].amount },
+                                    stock: checkBookStock.stock + req.body.cartItems[i].amount
+                                })
+                            checkCart.cartItems[y].amount = req.body.cartItems[i].amount
                         } else {
                             checkCart.cartItems[y].isReturned = true;
                             checkCart.cartItems[y].teacherReturn = req.userExists.id
@@ -292,7 +313,7 @@ exports.returnBook = async (req, res) => {
                 }
                 const orderBook = await CartModel.findOneAndUpdate({ "userBorrowInfo": req.body.userBorrowInfo },
                     { $set: checkCart },
-                    { new: true })              
+                    { new: true })
                 res.status(200).json({ success: true, data: orderBook, msg: "Xác nhận trả sách sách thành công!" })
                 // }
             }
@@ -638,6 +659,9 @@ exports.borrowBookAdmin = async (req, res) => {
                 if (req.body.cartItems[i].amount > checkBookStock.stock) {
                     res.status(200).json({ success: false, data: [], msg: "Không thể đặt quá số lượng cho phép!" })
                     break;
+                } else if (!req.body.cartItems[i].amount) {
+                    res.status(200).json({ success: false, data: [], msg: "Không thể đặt quá số lượng bằng 0!" })
+                    break;
                 } else {
                     const date1Year = new Date()
                     date1Year.setFullYear(date1Year.getFullYear() + 1)
@@ -684,32 +708,37 @@ exports.borrowBookAdmin = async (req, res) => {
                 const date1Year = new Date()
                 date1Year.setFullYear(date1Year.getFullYear() + 1)
                 for (i = 0; i < req.body.cartItems.length; i++) {
-                    const checkBookStock = await BookModel.findById(req.body.cartItems[i].bookId)
-                    newCart.cartItems.push(
-                        {
-                            bookId: req.body.cartItems[i].bookId,
-                            amount: req.body.cartItems[i].amount,
-                            isOrder: true,
-                            isConfirm: true,
-                            isBorrowed: true,
-                            teacherConfirm: req.userExists.id,
-                            teacherBorrow: req.userExists.id,
-                            timeConfirm: new Date(),
-                            timeBorrow: new Date(),
-                            exp: date1Year
-                        }
-                    )
-                    await BookModel.findOneAndUpdate({ "_id": req.body.cartItems[i].bookId },
-                        {
-                            $set: {
-                                authStock: checkBookStock.authStock - req.body.cartItems[i].amount,
-                                stock: checkBookStock.stock - req.body.cartItems[i].amount
-
+                    if (!req.body.cartItems[i].amount) {
+                        res.status(200).json({ success: false, data: [], msg: "Không thể đặt quá số lượng bằng 0!" })
+                        break;
+                    } else {
+                        const checkBookStock = await BookModel.findById(req.body.cartItems[i].bookId)
+                        newCart.cartItems.push(
+                            {
+                                bookId: req.body.cartItems[i].bookId,
+                                amount: req.body.cartItems[i].amount,
+                                isOrder: true,
+                                isConfirm: true,
+                                isBorrowed: true,
+                                teacherConfirm: req.userExists.id,
+                                teacherBorrow: req.userExists.id,
+                                timeConfirm: new Date(),
+                                timeBorrow: new Date(),
+                                exp: date1Year
                             }
-                        })
+                        )
+                        await BookModel.findOneAndUpdate({ "_id": req.body.cartItems[i].bookId },
+                            {
+                                $set: {
+                                    authStock: checkBookStock.authStock - req.body.cartItems[i].amount,
+                                    stock: checkBookStock.stock - req.body.cartItems[i].amount
+
+                                }
+                            })
+                    }
+                    const addUserCart = await CartModel(newCart).save();
+                    res.status(200).json({ success: true, data: addUserCart, msg: "Đã thêm sách vào giỏ hàng" })
                 }
-                const addUserCart = await CartModel(newCart).save();
-                res.status(200).json({ success: true, data: addUserCart, msg: "Đã thêm sách vào giỏ hàng" })
             } catch (err) {
                 return res.status(500).json({ success: false, msg: err.message });
             }

@@ -1,11 +1,11 @@
-const express = require ("express");
-const mongoose = require ("mongoose")
-const dotenv = require ("dotenv")
-const userRouter = require ("./routers/userRouter.js");
-const categoryRouter = require ("./routers/categoryRouter");
-const bookRouter = require ("./routers/bookRouter");
-const cartRouter = require ("./routers/cartRouter");
-const bannerRouter = require ("./routers/bannerRouter");
+const express = require("express");
+const mongoose = require("mongoose")
+const dotenv = require("dotenv")
+const userRouter = require("./routers/userRouter.js");
+const categoryRouter = require("./routers/categoryRouter");
+const bookRouter = require("./routers/bookRouter");
+const cartRouter = require("./routers/cartRouter");
+const bannerRouter = require("./routers/bannerRouter");
 var cors = require('cors')
 
 
@@ -18,7 +18,7 @@ const DATABASE = process.env.MONGO_URL
 mongoose.connect(DATABASE, {
     useNewUrlParser: true,
     useUnifiedTopology: true
-}).then(() => console.log("DB Connection Successfull in port: "+ PORT)).catch((err) => console.log(err))
+}).then(() => console.log("DB Connection Successfull in port: " + PORT)).catch((err) => console.log(err))
 
 const app = express();
 
