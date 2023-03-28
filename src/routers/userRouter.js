@@ -35,7 +35,7 @@ router.post("/createUser", verifyToken, userController.createUser);
 router.post("/login", userController.login);
 router.post("/loginUser", userController.loginUser);
 router.get("/logout", userController.logout);
-router.get("/:id", verifyToken, userController.getUser);
+router.get("/getuser", verifyToken, userController.getUser);
 router.get("/", verifyToken, userController.getallUser);
 router.put("/update/:id", verifyToken, userController.updateUser);
 router.put("/updatePassword", verifyToken, userController.updatePassword);

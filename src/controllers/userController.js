@@ -272,15 +272,15 @@ const validatePhone = async (phone) => {
 
 //GET USER BY ID
 exports.getUser = async (req, res) => {
-  if (req.userExists.id === req.params.id || req.userExists.isAdmin) {
+  if (req.userExists.id) {
     try {
-      const findUser = await UserModel.findById(req.params.id);
+      const findUser = await UserModel.findById(req.userExists.id);
       if (!findUser) {
         return res.status(200).json({ success: false, msg: "Không tìm thấy người dùng!" });
       } else if (findUser.isDeleted === true) {
         return res.status(200).json({ success: false, msg: "Không tìm thấy người dùng!" });
       } else {
-        return res.status(200).json(findUser);
+        return res.status(200).json({data: findUser});
       }
     } catch (err) {
       return res.status(500).json(err);

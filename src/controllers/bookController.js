@@ -393,7 +393,7 @@ exports.getallStockBook = async (req, res) => {
 exports.getallBookClient = async (req, res) => {
 
   try {
-    const findBook = await BookModel.find({ isDeleted: false }).populate([
+    const findBook = await BookModel.find({ isDeleted: false, stock: {$gt: 0}  }).populate([
       {
         path: "categoryItems",
         populate: {
@@ -473,7 +473,7 @@ exports.getalldeletedBook = async (req, res) => {
 // GET ALL BOOK
 exports.getallRandomBook = async (req, res) => {
   try {
-    const findBook = await BookModel.find({ isDeleted: false }).populate([
+    const findBook = await BookModel.find({ isDeleted: false, stock: {$gt: 0}  }).populate([
       {
         path: "categoryItems",
         populate: {
