@@ -332,7 +332,7 @@ exports.returnBook = async (req, res) => {
 
 //CANCEL ORDER
 exports.cancelBook = async (req, res) => {
-    const checkCart = await CartModel.findOne({ "userBorrowInfo": req.userExists.id });
+    const checkCart = await CartModel.findOne({ "userBorrowInfo": req.body.userBorrowInfo });
     try {
         for (let i = 0; i < req.body.cartItems.length; i++) {
             if (checkCart) {
