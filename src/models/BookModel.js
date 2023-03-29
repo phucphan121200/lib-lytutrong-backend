@@ -11,9 +11,6 @@ const BookSchema = mongoose.Schema(
             unique: true,
             default: "1"
         },
-        issuingcompany: {
-            type: String,
-        },
         booklet: {
             type: String,
         },
@@ -22,7 +19,7 @@ const BookSchema = mongoose.Schema(
         },
         image: {
             type: String,
-
+            default: "https://cdn-icons-png.flaticon.com/512/354/354602.png"
         },
         publicationdate: {
             type: String,

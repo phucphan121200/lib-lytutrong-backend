@@ -18,7 +18,6 @@ exports.addFileBook = async (req, res) => {
         const cate = await CategoryModel.findOne({name: xlData[i].Theloai})
         bookData.push({
           name: xlData[i].Tensach,
-          issuingcompany: xlData[i].Nhaxuatban,
           publicationdate: xlData[i].Namxuatban,
           stock: xlData[i].Soluong,
           authStock: xlData[i].Soluong,
@@ -58,7 +57,6 @@ exports.exportFileBook = async (req, res) => {
       { header: "ID", key: "bookId" },
       { header: "Tên sách", key: "name" },
       { header: "Tác giả", key: "translator" },
-      { header: "Nhà xuất bản", key: "issuingcompany" },
       { header: "Năm xuất bản", key: "publicationdate" },
       { header: "Thể loại", key: "categoryItems" },
       { header: "Số lượng khả dụng", key: "authStock" },
@@ -83,7 +81,6 @@ exports.exportFileBook = async (req, res) => {
         bookId: data[i].bookId,
         name: data[i].name,
         translator: data[i].translator,
-        issuingcompany: data[i].issuingcompany,
         publicationdate: data[i].publicationdate,
         categoryItems: data[i].categoryItems[0].categoryId.name,
         authStock: data[i].authStock,
@@ -120,7 +117,6 @@ exports.createBook = async (req, res) => {
   const newBook = {
     name: req.body.name,
     bookId: "BOOK-" + (count),
-    issuingcompany: req.body.issuingcompany,
     publicationdate: req.body.publicationdate,
     stock: req.body.stock,
     authStock: req.body.stock,
@@ -135,12 +131,10 @@ exports.createBook = async (req, res) => {
     if (req.userExists.isAdmin) {
       console.log(newBook.name)
       if (!newBook.name
-        || !newBook.issuingcompany
         || !newBook.publicationdate
         || !newBook.stock
         || !newBook.categoryItems
-        || !newBook.price
-        || !newBook.image) {
+        || !newBook.price) {
         return res
           .status(200)
           .send({ success: false, msg: "Vui lòng điền đủ thông tin" });
@@ -164,7 +158,6 @@ exports.updateBook = async (req, res) => {
   try {
     if (req.userExists.isAdmin) {
       if (!req.body.name
-        || !req.body.issuingcompany
         || !req.body.publicationdate
         || !req.body.stock
         || !req.body.categoryItems) {
