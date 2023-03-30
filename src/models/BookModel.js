@@ -19,14 +19,15 @@ const BookSchema = mongoose.Schema(
         },
         image: {
             type: String,
-            default: "https://cdn-icons-png.flaticon.com/512/354/354602.png"
+            default: "https://www.hachette.co.nz/graphics/CoverNotAvailable.jpg"
         },
         publicationdate: {
             type: String,
             require: true
         },
         translator: {
-            type: String
+            type: String,
+            default: "Chưa cập nhật..."
         },
         categoryItems: [{
             categoryId: {
