@@ -6,6 +6,11 @@ const UserSchema = mongoose.Schema(
             type: String,
             require: true
         },
+        idcard: {
+            type: String,
+            require: true,
+            unique: true
+        },
         password: {
             type: String,
             require: true,

@@ -21,6 +21,7 @@ exports.addFileUser = async (req, res) => {
         userData.push({
           name: xlData[i].HovaTen,
           phone: xlData[i].SDT,
+          idcard: xlData[i].CCCD,
           password: CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(password), process.env.SECRET_KEY).toString(),
           userId: "USER-" + (count + i)
         })
@@ -52,6 +53,7 @@ exports.exportFileUser = async (req, res) => {
       { header: "STT", key: "stt" },
       { header: "ID", key: "userId" },
       { header: "Họ và Tên", key: "name" },
+      { header: "CCCD/ Mã định danh", key: "idcard" },
       { header: "SDT", key: "phone" },
     ]
 
@@ -96,6 +98,7 @@ exports.createUser = async (req, res) => {
   const newUser = {
     name: req.body.name,
     phone: req.body.phone,
+    idcard: req.body.idcard,
     image: req.body.image,
     userId: "USER-" + count,
     password: CryptoJS.AES.encrypt(
@@ -105,7 +108,7 @@ exports.createUser = async (req, res) => {
   };
   try {
     if (req.userExists.isAdmin) {
-      if (!newUser.name || !newUser.phone) {
+      if (!newUser.name || !newUser.phone || !newUser.idcard) {
         return res
           .status(200)
           .send({ success: false, msg: "Vui lòng điền đầy đủ thông tin" });
@@ -135,14 +138,14 @@ exports.createUser = async (req, res) => {
 //LOGIN ADMIN
 exports.login = async (req, res) => {
   try {
-    const findUser = await UserModel.findOne({ phone: req.body.phone });
-    if (!req.body.phone || !req.body.password) {
+    const findUser = await UserModel.findOne({ idcard: req.body.idcard });
+    if (!req.body.idcard || !req.body.password) {
       return res
         .status(200)
         .json({ success: false, msg: "Vui lòng điền đầy đủ thông tin" });
-    } else if (!(await validatePhone(req.body.phone))) {
-      return res.status(200).json({ success: false, msg: "Số điện thoại không hợp lệ!" });
-    } else if (await validatePhone(req.body.phone)) {
+    } else if (!(await validateIdCard(req.body.idcard))) {
+      return res.status(200).json({ success: false, msg: "CCCD/ Mã định danh không hợp lệ!" });
+    } else if (await validateIdCard(req.body.idcard)) {
       if (req.body.password.length < 6) {
         return res.status(200).json({
           success: false,
@@ -174,7 +177,7 @@ exports.login = async (req, res) => {
     }
     const accessToken = jwt.sign(
       { id: findUser._id, isAdmin: findUser.isAdmin }, process.env.ACCESS_TOKEN,
-      { expiresIn: "24h" }
+      { expiresIn: "4h" }
     );
     const { password, ...info } = findUser._doc;
 
@@ -187,7 +190,7 @@ exports.login = async (req, res) => {
           id: info._id,
         },
         accessToken,
-        expire_in: 3600000,
+        expire_in: 14400000,
       },
     });
   } catch (err) {
@@ -198,13 +201,13 @@ exports.login = async (req, res) => {
 //LOGIN USER
 exports.loginUser = async (req, res) => {
   try {
-    const findUser = await UserModel.findOne({ phone: req.body.phone });
-    if (!req.body.phone || !req.body.password) {
+    const findUser = await UserModel.findOne({ idcard: req.body.idcard });
+    if (!req.body.idcard || !req.body.password) {
       return res
-        .status(200)
+        .status(400)
         .json({ success: false, msg: "Vui lòng điền đầy đủ thông tin" });
-    } else if (!(await validatePhone(req.body.phone))) {
-      return res.status(200).json({ success: false, msg: "Số điện thoại không hợp lệ!" });
+    } else if (!(await validateIdCard(req.body.idcard))) {
+      return res.status(400).json({ success: false, msg: "CCCD/ Mã định danh không hợp lệ!" });
     } else if (await validatePhone(req.body.phone)) {
       if (req.body.password.length < 6) {
         return res.status(200).json({
@@ -214,24 +217,24 @@ exports.loginUser = async (req, res) => {
       }
     } else if (!findUser) {
       return res
-        .status(200)
+        .status(400)
         .json({ success: false, msg: "Sai số điện thoại hoặc mật khẩu" });
     }
     const bytes = CryptoJS.AES.decrypt(findUser.password, process.env.SECRET_KEY);
     const originalPassword = bytes.toString(CryptoJS.enc.Utf8);
     if (findUser.isDeleted === true) {
       return res
-        .status(200)
+        .status(403)
         .json({ success: false, msg: "Tài khoản của bạn đã bị vô hiệu hóa" });
     }
     if (originalPassword !== req.body.password) {
       return res
-        .status(200)
+        .status(400)
         .json({ success: false, msg: "Sai số điện thoại hoặc mật khẩu" });
     }
     const accessToken = jwt.sign(
       { id: findUser._id, isAdmin: findUser.isAdmin }, process.env.ACCESS_TOKEN,
-      { expiresIn: "10h" }
+      { expiresIn: "4h" }
     );
     const { password, ...info } = findUser._doc;
 
@@ -244,7 +247,7 @@ exports.loginUser = async (req, res) => {
           id: info._id,
         },
         accessToken,
-        expire_in: 3600000,
+        expire_in: 14400000,
       },
     });
   } catch (err) {
@@ -265,6 +268,12 @@ const validatePhone = async (phone) => {
   const re = /^\(?(\d{3})\)?[- ]?(\d{3})[- ]?(\d{4})$/;
   return re.test(phone);
 };
+
+const validateIdCard = async (idcard) => {
+  const re = /^\d+$/;
+  return re.test(idcard);
+};
+
 // const validateEmail = async (email) => {
 //   const re = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 //   return re.test(email);
@@ -297,7 +306,7 @@ exports.getallUser = async (req, res) => {
   if (req.userExists.isAdmin) {
     try {
       const users = await UserModel.find({ isDeleted: false }).sort({
-        updatedAt: -1,
+        createdAt: -1,
       });
       if (!users) {
         return res.status(200).json({

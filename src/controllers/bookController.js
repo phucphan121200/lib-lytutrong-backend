@@ -315,7 +315,6 @@ exports.getBook = async (req, res) => {
         }
       }
     ]);
-    console.log(findBook)
     if (!findBook) {
       return res.status(200).json({ success: false, data: [], msg: "Không tìm thấy sách!" });
     } else if (findBook.isDeleted === true) {
