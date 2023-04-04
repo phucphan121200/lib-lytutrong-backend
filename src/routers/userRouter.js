@@ -39,6 +39,7 @@ router.get("/getuser", verifyToken, userController.getUser);
 router.get("/", verifyToken, userController.getallUser);
 router.put("/update/:id", verifyToken, userController.updateUser);
 router.put("/updatePassword", verifyToken, userController.updatePassword);
+router.put("/resetPassword", verifyToken, userController.resetPassword);
 router.put("/updateRole/:id", verifyToken, userController.updateRoleUser);
 router.delete("/delete/:id", verifyToken, userController.deleteUser);
 

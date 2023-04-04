@@ -289,7 +289,7 @@ exports.getUser = async (req, res) => {
       } else if (findUser.isDeleted === true) {
         return res.status(200).json({ success: false, msg: "Không tìm thấy người dùng!" });
       } else {
-        return res.status(200).json({data: findUser});
+        return res.status(200).json({ data: findUser });
       }
     } catch (err) {
       return res.status(500).json(err);
@@ -413,6 +413,45 @@ exports.updatePassword = async (req, res) => {
         { new: true }
       );
       return res.status(200).json({ success: true, msg: "Cập nhật mật khẩu thành công!", data: updateUser });
+    }
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ msg: err.message, success: false, data: null });
+  }
+};
+
+//RESET PASSWORD USER
+exports.resetPassword = async (req, res) => {
+  try {
+    const userData = req.body;
+    const findUser = await UserModel.findById(req.userExists.id);
+    const bytes = CryptoJS.AES.decrypt(findUser.password, process.env.SECRET_KEY);
+    const originalPassword = bytes.toString(CryptoJS.enc.Utf8);
+    if (!userData.password) {
+      return res.status(400).json({
+        success: false,
+        msg: "Vui lòng điền đầy đủ thông tin",
+        data: null,
+      });
+    } else if (!findUser) {
+      return res
+        .status(404)
+        .json({ success: false, msg: "Không tìm thấy bất kì người dùng nào!", data: null });
+    } else if (originalPassword !== userData.password) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Mật khẩu không hợp lệ", data: null });
+    } else {
+      const pass = CryptoJS.AES.encrypt(
+        CryptoJS.enc.Utf8.parse(process.env.NEWPASSWORD), process.env.SECRET_KEY
+      ).toString();
+      const updateUser = await UserModel.findByIdAndUpdate(
+        userData.iduser,
+        { $set: { password: pass } },
+        { new: true }
+      );
+      return res.status(200).json({ success: true, msg: "Thiết lập lại mật khẩu thành công!", data: updateUser });
     }
   } catch (err) {
     return res
