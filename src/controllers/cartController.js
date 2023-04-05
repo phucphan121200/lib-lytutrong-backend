@@ -650,7 +650,6 @@ exports.getwaittoBorrowAdmin = async (req, res) => {
 
 //BORROW BOOK ADMIN
 exports.borrowBookAdmin = async (req, res) => {
-    console.log(req.body)
     if (!req.body.userBorrowInfo) {
         res.status(200).json({ success: false, data: [], msg: "Vui lòng chọn giáo viên mượn sách!" })
     }

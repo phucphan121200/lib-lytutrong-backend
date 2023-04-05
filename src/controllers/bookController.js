@@ -1,7 +1,7 @@
 const { BookModel } = require("../models/BookModel")
 const { CategoryModel } = require("../models/CategoryModel")
 const XLSX = require('xlsx')
-const {Workbook} = require('exceljs')
+const { Workbook } = require('exceljs')
 const fs = require('fs');
 
 //ADD FILE BOOK
@@ -15,7 +15,7 @@ exports.addFileBook = async (req, res) => {
     sheet_namelist.forEach(async element => {
       const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_namelist[x]]);
       for (let i = 0; i < xlData.length; i++) {
-        const cate = await CategoryModel.findOne({name: xlData[i].Theloai})
+        const cate = await CategoryModel.findOne({ name: xlData[i].Theloai })
         bookData.push({
           name: xlData[i].Tensach,
           publicationdate: xlData[i].Namxuatban,
@@ -25,11 +25,11 @@ exports.addFileBook = async (req, res) => {
           image: xlData[i].Hinhanh,
           translator: xlData[i].Tacgia,
           price: xlData[i].Dongia,
-          categoryItems: [{categoryId: cate._id}],
+          categoryItems: [{ categoryId: cate._id }],
           bookId: "BOOK-" + (count + i)
         })
       }
-      BookModel.insertMany(bookData)
+      await BookModel.insertMany(bookData)
       x++;
     });
 
@@ -40,7 +40,7 @@ exports.addFileBook = async (req, res) => {
       else {
       }
     })
-    res.status(200).json({ success: true, msg: "Thêm người dùng thành công" })
+    res.status(200).json({ success: true, msg: "Thêm đầu sách thành công" })
   } catch (error) {
     res.status(200).json({ success: false, data: [], msg: "Lỗi hệ thống" })
   }
@@ -73,20 +73,43 @@ exports.exportFileBook = async (req, res) => {
         }
       }
     ])
-    
+
     const add = []
-    for(let i =0; i<data.length;i++){
-      add.push({
-        stt: i+1,
-        bookId: data[i].bookId,
-        name: data[i].name,
-        translator: data[i].translator,
-        publicationdate: data[i].publicationdate,
-        categoryItems: data[i].categoryItems[0].categoryId.name,
-        authStock: data[i].authStock,
-        stock: data[i].stock,
-        liquid: data[i].liquid
-      })
+    if (req.params.id == 1) {
+      for (let i = 0; i < data.length; i++) {
+        add.push({
+          stt: i + 1,
+          bookId: data[i].bookId,
+          name: data[i].name,
+          translator: data[i].translator,
+          publicationdate: data[i].publicationdate,
+          categoryItems: data[i].categoryItems[0].categoryId.name,
+          authStock: data[i].authStock,
+          stock: data[i].stock,
+          liquid: data[i].liquid
+        })
+      }
+    }
+    else {
+      let count = 0;
+      for (let i = 0; i < data.length; i++) {
+        for (let y = 0; y < data[i].categoryItems.length; y++) {
+          if (data[i].categoryItems[y].categoryId._id == req.params.id) {
+            add.push({
+              stt: count + 1,
+              bookId: data[i].bookId,
+              name: data[i].name,
+              translator: data[i].translator,
+              publicationdate: data[i].publicationdate,
+              categoryItems: data[i].categoryItems[0].categoryId.name,
+              authStock: data[i].authStock,
+              stock: data[i].stock,
+              liquid: data[i].liquid
+            })
+            count += 1
+          }
+        }
+      }
     }
 
     add.forEach((book) => {
@@ -126,7 +149,7 @@ exports.createBook = async (req, res) => {
     translator: req.body.translator,
     price: req.body.price
   };
-  
+
   try {
     if (req.userExists.isAdmin) {
       console.log(newBook.name)
@@ -223,10 +246,10 @@ exports.liquidBook = async (req, res) => {
           .json({ success: false, data: [], msg: "Vui lòng thêm số lượng cần nhập" });
       } else {
         const findBook = await BookModel.findById(req.params.id);
-        if(req.body.stock > findBook.authStock){
+        if (req.body.stock > findBook.authStock) {
           return res
-          .status(200)
-          .json({ success: false, data: [], msg: "Có phiên mượn đang chứa sách đã chọn" });
+            .status(200)
+            .json({ success: false, data: [], msg: "Có phiên mượn đang chứa sách đã chọn" });
         }
         else {
           const newstock = findBook.stock - parseInt(req.body.stock);
@@ -339,11 +362,24 @@ exports.getallBook = async (req, res) => {
             select: "name",
           }
         }
-      ]).sort({updatedAt: -1});
+      ]).sort({ updatedAt: -1 });
       if (findBook == "") {
         return res.status(200).json({ success: true, msg: "Không tìm thấy bất kì đầu sách nào!", data: [] });
       } else {
-        return res.status(200).json({ success: true, data: findBook, msg: "Lấy dữ liệu thành công" });
+        if (req.params.id == 1) {
+          return res.status(200).json({ success: true, data: findBook, msg: "Lấy dữ liệu thành công" });
+        }
+        else {
+          const filter = []
+          for (i = 0; i < findBook.length; i++) {
+            for (y = 0; y < findBook[i].categoryItems.length; y++) {
+              if (findBook[i].categoryItems[y].categoryId._id == req.params.id) {
+                filter.push(findBook[i])
+              }
+            }
+          }
+          return res.status(200).json({ success: true, data: filter, msg: "Lấy dữ liệu thành công" });
+        }
       }
     } catch (err) {
       return res.status(500).json({ success: true, msg: err });
@@ -358,7 +394,7 @@ exports.getallBook = async (req, res) => {
 exports.getallStockBook = async (req, res) => {
   if (req.userExists.isAdmin) {
     try {
-      const findBook = await BookModel.find({ isDeleted: false, stock: {$gt: 0} }).populate([
+      const findBook = await BookModel.find({ isDeleted: false, stock: { $gt: 0 } }).populate([
         {
           path: "categoryItems",
           populate: {
@@ -366,7 +402,7 @@ exports.getallStockBook = async (req, res) => {
             select: "name",
           }
         }
-      ]).sort({updatedAt: -1});
+      ]).sort({ updatedAt: -1 });
       if (findBook == "") {
         return res.status(200).json({ success: true, msg: "Không tìm thấy bất kì đầu sách nào!", data: [] });
       } else {
@@ -385,7 +421,7 @@ exports.getallStockBook = async (req, res) => {
 exports.getallBookClient = async (req, res) => {
 
   try {
-    const findBook = await BookModel.find({ isDeleted: false, stock: {$gt: 0}  }).populate([
+    const findBook = await BookModel.find({ isDeleted: false, stock: { $gt: 0 } }).populate([
       {
         path: "categoryItems",
         populate: {
@@ -393,7 +429,7 @@ exports.getallBookClient = async (req, res) => {
           select: "name",
         }
       }
-    ]).sort({updatedAt: -1});
+    ]).sort({ updatedAt: -1 });
     if (findBook == "") {
       return res.status(200).json({ success: true, msg: "Không tìm thấy bất kì đầu sách nào!", data: [] });
     } else {
@@ -415,7 +451,7 @@ exports.filterBookClient = async (req, res) => {
           select: "name",
         }
       }
-    ]).sort({updatedAt: -1});
+    ]).sort({ updatedAt: -1 });
     if (findBook == "") {
       return res.status(200).json({ success: true, msg: "Không tìm thấy bất kì đầu sách nào!", data: [] });
     } else {
@@ -465,7 +501,7 @@ exports.getalldeletedBook = async (req, res) => {
 // GET ALL BOOK
 exports.getallRandomBook = async (req, res) => {
   try {
-    const findBook = await BookModel.find({ isDeleted: false, stock: {$gt: 0}  }).populate([
+    const findBook = await BookModel.find({ isDeleted: false, stock: { $gt: 0 } }).populate([
       {
         path: "categoryItems",
         populate: {

@@ -65,6 +65,7 @@ exports.exportFileUser = async (req, res) => {
         stt: i + 1,
         userId: data[i].userId,
         name: data[i].name,
+        idcard: data[i].idcard,
         phone: data[i].phone
       })
     }
