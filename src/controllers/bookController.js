@@ -182,7 +182,6 @@ exports.updateBook = async (req, res) => {
     if (req.userExists.isAdmin) {
       if (!req.body.name
         || !req.body.publicationdate
-        || !req.body.stock
         || !req.body.categoryItems) {
         return res
           .status(200)
