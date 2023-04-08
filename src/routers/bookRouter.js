@@ -41,7 +41,7 @@ router.get("/getalldeletedBook", bookController.getalldeletedBook);
 router.put("/recoverBook/:id", verifyToken, bookController.recoverBook);
 
 router.get("/getallBookClient", bookController.getallBookClient);
-router.get("/filterBookClient/:id", bookController.filterBookClient);
+router.post("/filterBookClient", bookController.filterBookClient);
 router.get("/getallRandomBook", bookController.getallRandomBook);
 
 module.exports = router;

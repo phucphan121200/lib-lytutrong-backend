@@ -22,6 +22,7 @@ exports.addFileBook = async (req, res) => {
           stock: xlData[i].Soluong,
           authStock: xlData[i].Soluong,
           liquid: 0,
+          grade: xlData[i].Lop,
           image: xlData[i].Hinhanh,
           translator: xlData[i].Tacgia,
           price: xlData[i].Dongia,
@@ -144,6 +145,7 @@ exports.createBook = async (req, res) => {
     stock: req.body.stock,
     authStock: req.body.stock,
     liquid: 0,
+    grade: req.body.grade,
     image: req.body.image,
     categoryItems: req.body.categoryItems,
     translator: req.body.translator,
@@ -454,15 +456,32 @@ exports.filterBookClient = async (req, res) => {
     if (findBook == "") {
       return res.status(200).json({ success: true, msg: "Không tìm thấy bất kì đầu sách nào!", data: [] });
     } else {
-      if (req.params.id == 1) {
+      const filter = []
+      if (req.body.cate == 1 && req.body.grade == 0) {
         return res.status(200).json({ success: true, data: findBook, msg: "Lấy dữ liệu thành công" });
       }
-      else {
-        const filter = []
+      else if (req.body.cate != 1 && req.body.grade == 0) {
         for (i = 0; i < findBook.length; i++) {
-
           for (y = 0; y < findBook[i].categoryItems.length; y++) {
-            if (findBook[i].categoryItems[y].categoryId._id == req.params.id) {
+            if (findBook[i].categoryItems[y].categoryId._id == req.body.cate) {
+              filter.push(findBook[i])
+            }
+          }
+        }
+        return res.status(200).json({ success: true, data: filter, msg: "Lấy dữ liệu thành công" });
+      }
+      else if (req.body.cate === 1 && req.body.grade != 0) {
+        for (i = 0; i < findBook.length; i++) {
+          if (findBook[i].grade == req.body.grade) {
+            filter.push(findBook[i])
+          }
+        }
+        return res.status(200).json({ success: true, data: filter, msg: "Lấy dữ liệu thành công" });
+      }
+      else {
+        for (i = 0; i < findBook.length; i++) {
+          for (y = 0; y < findBook[i].categoryItems.length; y++) {
+            if (findBook[i].categoryItems[y].categoryId._id == req.body.cate && findBook[i].grade == req.body.grade) {
               filter.push(findBook[i])
             }
           }
