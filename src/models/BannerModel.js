@@ -4,8 +4,7 @@ const BannerSchema = mongoose.Schema(
     {
         name: {
             type: String,
-            require: true,
-            unique: true
+            require: true
         },
         image: {
             type: String,

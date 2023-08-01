@@ -60,7 +60,11 @@ const BookSchema = mongoose.Schema(
             type: Boolean,
             require: true,
             default: false
-        }
+        },
+        // bookOnline: {
+        //     type: String,
+        //     default: ""
+        // }
     },
     {
         timestamps: true,
