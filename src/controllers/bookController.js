@@ -140,7 +140,7 @@ exports.createBook = async (req, res) => {
   const count = await BookModel.count()
   const newBook = {
     name: req.body.name,
-    bookId: "BOOK-" + (count),
+    bookId: "BOOK-" + (count + 1),
     publicationdate: req.body.publicationdate,
     stock: req.body.stock,
     authStock: req.body.stock,

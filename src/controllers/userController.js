@@ -101,7 +101,7 @@ exports.createUser = async (req, res) => {
     phone: req.body.phone,
     idcard: req.body.idcard,
     image: req.body.image,
-    userId: "USER-" + count,
+    userId: "USER-" + (count + 1 ),
     password: CryptoJS.AES.encrypt(
       CryptoJS.enc.Utf8.parse(password), process.env.SECRET_KEY
     ).toString(),
@@ -122,6 +122,7 @@ exports.createUser = async (req, res) => {
 
       }
       else {
+        console.log(newUser)
         const addUser = await UserModel(newUser).save();
         return res.status(200).json({ success: true, data: addUser, msg: "Thêm người dùng thành công" });
       }
@@ -132,6 +133,7 @@ exports.createUser = async (req, res) => {
     }
 
   } catch (err) {
+    console.log(err)
     return res.status(500).json({ error: err.message });
   }
 };
