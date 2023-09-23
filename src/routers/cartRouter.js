@@ -41,5 +41,7 @@ router.get("/getUserCancelAdmin/:id", verifyToken, cartController.getUserCancelA
 // router.get("/getalldeletedBook", bookController.getalldeletedBook);
 // router.put("/recoverBook/:id", verifyToken, bookController.recoverBook);
 router.post("/borrowBookAdmin", verifyToken, cartController.borrowBookAdmin);
+router.post("/getCartInTime",verifyToken, cartController.getCartInTime);
+router.put("/migrateDataTimeOrder", cartController.migrateDataTimeOrder);
 
 module.exports = router;

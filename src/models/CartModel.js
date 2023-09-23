@@ -49,6 +49,9 @@ const CartSchema = mongoose.Schema(
                     type: mongoose.Schema.Types.ObjectId,
                     ref: "Users"
                 },
+                timeOrder: {
+                    type: Date
+                },
                 timeConfirm: {
                     type: Date
                 },

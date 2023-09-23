@@ -1,5 +1,6 @@
 const { CartModel } = require("../models/CartModel")
 const { BookModel } = require("../models/BookModel");
+const { Workbook } = require('exceljs');
 
 // ADD CART
 exports.createCart = async (req, res) => {
@@ -94,6 +95,7 @@ exports.orderBook = async (req, res) => {
                             && checkCart.cartItems[y].isBorrowed == false
                             && checkCart.cartItems[y].isReturned == false) {
                             checkCart.cartItems[y].isOrder = true;
+                            checkCart.cartItems[y].timeOrder = new Date();
                             checkCart.cartItems[y].amount = req.body.cartItems[i].amount
                             await BookModel.findOneAndUpdate({ "_id": checkCart.cartItems[y].bookId },
                                 { $set: { authStock: checkBookStock.authStock - req.body.cartItems[i].amount } })
@@ -682,6 +684,7 @@ exports.borrowBookAdmin = async (req, res) => {
                                     isBorrowed: true,
                                     teacherConfirm: req.userExists.id,
                                     teacherBorrow: req.userExists.id,
+                                    timeOrder: new Date(),
                                     timeConfirm: new Date(),
                                     timeBorrow: new Date(),
                                     exp: date1Year
@@ -727,6 +730,7 @@ exports.borrowBookAdmin = async (req, res) => {
                                 isBorrowed: true,
                                 teacherConfirm: req.userExists.id,
                                 teacherBorrow: req.userExists.id,
+                                timeOrder: new Date(),
                                 timeConfirm: new Date(),
                                 timeBorrow: new Date(),
                                 exp: date1Year
@@ -1470,4 +1474,147 @@ exports.getCartAdmin = async (req, res) => {
         res.status(200).json({ success: true, data: [], msg: "Bạn không phải admin để thực hiện thao tác này" })
     }
 
+}
+
+//GET BOOK BORROW IN TIME
+exports.getCartInTime = async (req, res) => {
+    const dataBorrow = [];
+    if (req.userExists.isAdmin) {
+        try {
+            const getAllCart = await CartModel.find({ isDeleted: false })
+                .populate("userBorrowInfo")
+                .populate([
+                    {
+                        path: "cartItems",
+                        populate: {
+                            path: "bookId"
+                        }
+                    }
+                ])
+                .populate([
+                    {
+                        path: "cartItems",
+                        populate: {
+                            path: "teacherConfirm"
+                        }
+                    }
+                ])
+                .populate([
+                    {
+                        path: "cartItems",
+                        populate: {
+                            path: "teacherBorrow"
+                        }
+                    }
+                ])
+                .populate([
+                    {
+                        path: "cartItems",
+                        populate: {
+                            path: "teacherReturn"
+                        }
+                    }
+                ])
+                .sort({ updatedAt: -1 });
+            if (getAllCart) {
+                for (let i = 0; i < getAllCart.length; i++) {
+                    for (let y = 0; y < getAllCart[i].cartItems.length; y++) {
+                        if (new Date(req.body.startTime) <= getAllCart[i].cartItems[y].timeOrder
+                            && getAllCart[i].cartItems[y].timeOrder <= new Date(req.body.endTime)) {
+                            if (getAllCart[i].cartItems[y].isOrder == true
+                                && getAllCart[i].cartItems[y].isConfirm == true
+                                && getAllCart[i].cartItems[y].isBorrowed == true
+                                && getAllCart[i].cartItems[y].isReturned == false
+                                && getAllCart[i].cartItems[y].isCancel == false
+                                && new Date(getAllCart[i].cartItems[y].exp)?.getTime() < new Date().getTime()) {
+                                const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                                clone.status = "Quá hạn";
+                                clone.name = getAllCart[i].userBorrowInfo.name;
+                                clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                                dataBorrow.push(clone);
+                            } else if (getAllCart[i].cartItems[y].isOrder == true
+                                && getAllCart[i].cartItems[y].isConfirm == true
+                                && getAllCart[i].cartItems[y].isBorrowed == true
+                                && getAllCart[i].cartItems[y].isReturned == false
+                                && getAllCart[i].cartItems[y].isCancel == false
+                                && new Date(getAllCart[i].cartItems[y].exp)?.getTime() < new Date().getTime() + 30 * 24 * 60 * 60 * 1000) {
+                                const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                                clone.status = "Cận hạn";
+                                clone.name = getAllCart[i].userBorrowInfo.name;
+                                clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                                dataBorrow.push(clone);
+                            } else if (getAllCart[i].cartItems[y].isOrder == true
+                                && getAllCart[i].cartItems[y].isConfirm == true
+                                && getAllCart[i].cartItems[y].isBorrowed == true
+                                && getAllCart[i].cartItems[y].isReturned == false
+                                && getAllCart[i].cartItems[y].isCancel == false
+                                && new Date(getAllCart[i].cartItems[y].exp)?.getTime() >= new Date().getTime()) {
+                                const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                                clone.status = "Đang mượn";
+                                clone.name = getAllCart[i].userBorrowInfo.name;
+                                clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                                dataBorrow.push(clone);
+                            } else if (getAllCart[i].cartItems[y].isOrder == true
+                                && getAllCart[i].cartItems[y].isConfirm == true
+                                && getAllCart[i].cartItems[y].isBorrowed == false
+                                && getAllCart[i].cartItems[y].isReturned == false
+                                && getAllCart[i].cartItems[y].isCancel == false) {
+                                const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                                clone.status = "Chờ lấy";
+                                clone.name = getAllCart[i].userBorrowInfo.name;
+                                clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                                dataBorrow.push(clone);
+                            } else if (getAllCart[i].cartItems[y].isOrder == true
+                                && getAllCart[i].cartItems[y].isConfirm == false
+                                && getAllCart[i].cartItems[y].isBorrowed == false
+                                && getAllCart[i].cartItems[y].isReturned == false
+                                && getAllCart[i].cartItems[y].isCancel == false) {
+                                const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                                clone.status = "Chờ duyệt";
+                                clone.name = getAllCart[i].userBorrowInfo.name;
+                                clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                                dataBorrow.push(clone);
+                            } else if (getAllCart[i].cartItems[y].isOrder == true
+                                && getAllCart[i].cartItems[y].isConfirm == true
+                                && getAllCart[i].cartItems[y].isBorrowed == true
+                                && getAllCart[i].cartItems[y].isReturned == true
+                                && getAllCart[i].cartItems[y].isCancel == false) {
+                                const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                                clone.status = "Đã trả";
+                                clone.name = getAllCart[i].userBorrowInfo.name;
+                                clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                                dataBorrow.push(clone);
+                            } else if (getAllCart[i].cartItems[y].isCancel == true) {
+                                const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                                clone.status = "Đã hủy";
+                                clone.name = getAllCart[i].userBorrowInfo.name;
+                                clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                                dataBorrow.push(clone);
+                            }
+
+                        }
+                    }
+                }
+                res.status(200).json({ success: true, data: dataBorrow, msg: "Lọc dữ liệu thành công!" })
+            }
+            else {
+                res.status(200).json({ success: false, data: [], msg: "Không có bất kì phiên mượn sách nào chờ duyệt!" })
+            }
+
+        } catch (err) {
+            return res.status(500).json({ success: false, msg: err.message });
+        }
+    } else {
+        res.status(200).json({ success: true, data: [], msg: "Bạn không phải admin để thực hiện thao tác này" })
+    }
+}
+
+//GET BOOK BORROW IN TIME
+exports.migrateDataTimeOrder = async (req, res) => {
+    try {
+        const orderBook = await CartModel.updateMany({ "cartItems.$[].isOrder": true }, { $set: { "cartItems.$[].timeOrder": new Date() } })
+        res.status(200).json({ success: true, data: orderBook, msg: "Cập nhật thành công!" })
+    } catch {
+        return res.status(500).json({ success: false, msg: err.message });
+    }
 }
