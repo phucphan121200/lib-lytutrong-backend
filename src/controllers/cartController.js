@@ -1407,9 +1407,10 @@ exports.getUserCancelAdmin = async (req, res) => {
 
 //GET USER ALL BOOK
 exports.getCartAdmin = async (req, res) => {
+    const dataBorrow = [];
     if (req.userExists.isAdmin) {
         try {
-            const getwaittoconfirmAdmin = await CartModel.find({ isDeleted: false })
+            const getAllCart = await CartModel.find({ isDeleted: false })
                 .populate("userBorrowInfo")
                 .populate([
                     {
@@ -1442,30 +1443,101 @@ exports.getCartAdmin = async (req, res) => {
                             path: "teacherReturn"
                         }
                     }
-                ]).sort({ cartItems: -1 });
-            if (getwaittoconfirmAdmin) {
-                for (let i = 0; i < getwaittoconfirmAdmin.length; i++) {
-                    for (let y = 0; y < getwaittoconfirmAdmin[i].cartItems.length; y++) {
-                        if (getwaittoconfirmAdmin[i].cartItems[y].isOrder == false
-                            & getwaittoconfirmAdmin[i].cartItems[y].isConfirm == false
-                            & getwaittoconfirmAdmin[i].cartItems[y].isBorrowed == false
-                            & getwaittoconfirmAdmin[i].cartItems[y].isReturned == false
-                            || getwaittoconfirmAdmin[i].cartItems[y].isCancel == true) {
-                            getwaittoconfirmAdmin[i].cartItems.splice(y, 1)
-                            y--
+                ])
+                .sort({ updatedAt: -1 });
+            if (getAllCart) {
+                for (let i = 0; i < getAllCart.length; i++) {
+                    for (let y = 0; y < getAllCart[i].cartItems.length; y++) {
+                        if (getAllCart[i].cartItems[y].isOrder == true
+                            && getAllCart[i].cartItems[y].isConfirm == true
+                            && getAllCart[i].cartItems[y].isBorrowed == true
+                            && getAllCart[i].cartItems[y].isReturned == false
+                            && getAllCart[i].cartItems[y].isCancel == false
+                            && new Date(getAllCart[i].cartItems[y].exp)?.getTime() < new Date().getTime()) {
+                            const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                            clone.status = "Quá hạn";
+                            clone.iduser = getAllCart[i].userBorrowInfo._id;
+                            clone.image = getAllCart[i].userBorrowInfo.image;
+                            clone.name = getAllCart[i].userBorrowInfo.name;
+                            clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                            dataBorrow.push(clone);
+                        } else if (getAllCart[i].cartItems[y].isOrder == true
+                            && getAllCart[i].cartItems[y].isConfirm == true
+                            && getAllCart[i].cartItems[y].isBorrowed == true
+                            && getAllCart[i].cartItems[y].isReturned == false
+                            && getAllCart[i].cartItems[y].isCancel == false
+                            && new Date(getAllCart[i].cartItems[y].exp)?.getTime() < new Date().getTime() + 30 * 24 * 60 * 60 * 1000) {
+                            const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                            clone.status = "Cận hạn";
+                            clone.image = getAllCart[i].userBorrowInfo.image;
+                            clone.iduser = getAllCart[i].userBorrowInfo._id;
+                            clone.name = getAllCart[i].userBorrowInfo.name;
+                            clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                            dataBorrow.push(clone);
+                        } else if (getAllCart[i].cartItems[y].isOrder == true
+                            && getAllCart[i].cartItems[y].isConfirm == true
+                            && getAllCart[i].cartItems[y].isBorrowed == true
+                            && getAllCart[i].cartItems[y].isReturned == false
+                            && getAllCart[i].cartItems[y].isCancel == false
+                            && new Date(getAllCart[i].cartItems[y].exp)?.getTime() >= new Date().getTime() + 30 * 24 * 60 * 60 * 1000) {
+                            const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                            clone.status = "Đang mượn";
+                            clone.image = getAllCart[i].userBorrowInfo.image;
+                            clone.iduser = getAllCart[i].userBorrowInfo._id;
+                            clone.name = getAllCart[i].userBorrowInfo.name;
+                            clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                            dataBorrow.push(clone);
+                        } else if (getAllCart[i].cartItems[y].isOrder == true
+                            && getAllCart[i].cartItems[y].isConfirm == true
+                            && getAllCart[i].cartItems[y].isBorrowed == false
+                            && getAllCart[i].cartItems[y].isReturned == false
+                            && getAllCart[i].cartItems[y].isCancel == false) {
+                            const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                            clone.status = "Chờ lấy";
+                            clone.image = getAllCart[i].userBorrowInfo.image;
+                            clone.iduser = getAllCart[i].userBorrowInfo._id;
+                            clone.name = getAllCart[i].userBorrowInfo.name;
+                            clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                            dataBorrow.push(clone);
+                        } else if (getAllCart[i].cartItems[y].isOrder == true
+                            && getAllCart[i].cartItems[y].isConfirm == false
+                            && getAllCart[i].cartItems[y].isBorrowed == false
+                            && getAllCart[i].cartItems[y].isReturned == false
+                            && getAllCart[i].cartItems[y].isCancel == false) {
+                            const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                            clone.status = "Chờ duyệt";
+                            clone.image = getAllCart[i].userBorrowInfo.image;
+                            clone.iduser = getAllCart[i].userBorrowInfo._id;
+                            clone.name = getAllCart[i].userBorrowInfo.name;
+                            clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                            dataBorrow.push(clone);
+                        } else if (getAllCart[i].cartItems[y].isOrder == true
+                            && getAllCart[i].cartItems[y].isConfirm == true
+                            && getAllCart[i].cartItems[y].isBorrowed == true
+                            && getAllCart[i].cartItems[y].isReturned == true
+                            && getAllCart[i].cartItems[y].isCancel == false) {
+                            const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                            clone.status = "Đã trả";
+                            clone.image = getAllCart[i].userBorrowInfo.image;
+                            clone.iduser = getAllCart[i].userBorrowInfo._id;
+                            clone.name = getAllCart[i].userBorrowInfo.name;
+                            clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                            dataBorrow.push(clone);
+                        } else if (getAllCart[i].cartItems[y].isCancel == true) {
+                            const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
+                            clone.status = "Đã hủy";
+                            clone.image = getAllCart[i].userBorrowInfo.image;
+                            clone.iduser = getAllCart[i].userBorrowInfo._id;
+                            clone.name = getAllCart[i].userBorrowInfo.name;
+                            clone.idcard = getAllCart[i].userBorrowInfo.idcard;
+                            dataBorrow.push(clone);
                         }
                     }
                 }
-                for (let i = 0; i < getwaittoconfirmAdmin.length; i++) {
-                    if (getwaittoconfirmAdmin[i].cartItems.length == 0) {
-                        getwaittoconfirmAdmin.splice(i, 1)
-                        i--
-                    }
-                }
-                res.status(200).json({ success: true, data: getwaittoconfirmAdmin, msg: "Lấy dữ liệu thành công!" })
+                res.status(200).json({ success: true, data: dataBorrow, msg: "Lấy dữ liệu thành công!" })
             }
             else {
-                res.status(200).json({ success: true, data: [], msg: "Không có bất kì phiên mượn sách nào chờ duyệt!" })
+                res.status(200).json({ success: false, data: [], msg: "Không có bất kì phiên mượn sách nào!" })
             }
         } catch (err) {
             return res.status(500).json({ success: false, msg: err.message });
@@ -1473,7 +1545,6 @@ exports.getCartAdmin = async (req, res) => {
     } else {
         res.status(200).json({ success: true, data: [], msg: "Bạn không phải admin để thực hiện thao tác này" })
     }
-
 }
 
 //GET BOOK BORROW IN TIME
@@ -1548,7 +1619,7 @@ exports.getCartInTime = async (req, res) => {
                                 && getAllCart[i].cartItems[y].isBorrowed == true
                                 && getAllCart[i].cartItems[y].isReturned == false
                                 && getAllCart[i].cartItems[y].isCancel == false
-                                && new Date(getAllCart[i].cartItems[y].exp)?.getTime() >= new Date().getTime()) {
+                                && new Date(getAllCart[i].cartItems[y].exp)?.getTime() >= new Date().getTime() + 30 * 24 * 60 * 60 * 1000) {
                                 const clone = JSON.parse(JSON.stringify(getAllCart[i].cartItems[y]))
                                 clone.status = "Đang mượn";
                                 clone.name = getAllCart[i].userBorrowInfo.name;
