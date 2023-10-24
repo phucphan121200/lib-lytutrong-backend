@@ -9,26 +9,32 @@ const fs = require('fs');
 //ADD FILE USER
 exports.addFileUser = async (req, res) => {
   try {
-    const password = process.env.NEWPASSWORD
-    const count = await UserModel.count()
+    const password = process.env.NEWPASSWORD;
+    const count = await UserModel.count();
     const workbook = XLSX.readFile(req.file.path);
     const sheet_namelist = workbook.SheetNames;
-    let x = 0;
-    const userData = []
-    sheet_namelist.forEach(element => {
-      const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_namelist[x]]);
+    const userData = [];
+
+    for (const sheetName of sheet_namelist) {
+      const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
       for (let i = 0; i < xlData.length; i++) {
+        const encryptedPassword = CryptoJS.AES.encrypt(
+          CryptoJS.enc.Utf8.parse(password),
+          process.env.SECRET_KEY
+        ).toString();
+
         userData.push({
           name: xlData[i].HovaTen,
           phone: xlData[i].SDT,
           idcard: xlData[i].CCCD,
-          password: CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(password), process.env.SECRET_KEY).toString(),
+          password: encryptedPassword,
           userId: "USER-" + (count + i)
-        })
+        });
       }
-      UserModel.insertMany(userData)
-      x++;
-    });
+    }
+
+    await UserModel.insertMany(userData);
 
     fs.unlink(req.file.path, (err) => {
       if (err) {
@@ -101,7 +107,7 @@ exports.createUser = async (req, res) => {
     phone: req.body.phone,
     idcard: req.body.idcard,
     image: req.body.image,
-    userId: "USER-" + (count + 1 ),
+    userId: "USER-" + (count + 1),
     password: CryptoJS.AES.encrypt(
       CryptoJS.enc.Utf8.parse(password), process.env.SECRET_KEY
     ).toString(),
