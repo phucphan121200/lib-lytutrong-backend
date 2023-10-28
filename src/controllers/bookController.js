@@ -6,8 +6,9 @@ const fs = require('fs');
 
 //ADD FILE BOOK
 exports.addFileBook = async (req, res) => {
-  try {
+  // try {
     const count = await BookModel.count()
+    console.log("COUNT:" +count)
     const workbook = XLSX.readFile(req.file.path);
     const sheet_namelist = workbook.SheetNames;
     let x = 0;
@@ -27,7 +28,7 @@ exports.addFileBook = async (req, res) => {
           translator: xlData[i].Tacgia,
           price: xlData[i].Dongia,
           categoryItems: [{ categoryId: cate._id }],
-          bookId: "BOOK-" + (count+i)
+          bookId: "BOOK-" + (count+ (i+1))
         });
       }
     }
@@ -40,9 +41,9 @@ exports.addFileBook = async (req, res) => {
       }
     })
     res.status(200).json({ success: true, msg: "Thêm đầu sách thành công" })
-  } catch (error) {
-    res.status(200).json({ success: false, data: [], msg: "Lỗi hệ thống" })
-  }
+  // } catch (error) {
+  //   res.status(200).json({ success: false, data: [], msg: "Lỗi hệ thống" })
+  // }
 }
 
 //EXPORT FILE

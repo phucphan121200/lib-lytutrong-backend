@@ -29,7 +29,7 @@ exports.addFileUser = async (req, res) => {
           phone: xlData[i].SDT,
           idcard: xlData[i].CCCD,
           password: encryptedPassword,
-          userId: "USER-" + (count + i)
+          userId: "USER-" + (count+ (i+1))
         });
       }
     }
